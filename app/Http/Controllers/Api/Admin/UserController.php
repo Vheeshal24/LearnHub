@@ -14,7 +14,7 @@ class UserController extends Controller
     public function stats(Request $request)
     {
         $total = User::count();
-        $admins = User::where('is_admin', true)->count();
+        $admins = User::where('role', 'admin')->orWhere('is_admin', true)->count();
         $newLast7 = User::where('created_at', '>=', now()->subDays(7))->count();
         return response()->json([
             'total' => (int) $total,
@@ -35,11 +35,17 @@ class UserController extends Controller
                     ->orWhere('email', 'LIKE', "%$q%");
             });
         }
-        if ($role === 'admin') {
-            $query->where('is_admin', true);
-        } elseif ($role === 'user') {
-            $query->where(function ($sub) {
-                $sub->whereNull('is_admin')->orWhere('is_admin', false);
+        if (in_array($role, ['student', 'teacher', 'admin'], true)) {
+            $query->where(function ($sub) use ($role) {
+                $sub->where('role', $role)->orWhere(function ($legacy) use ($role) {
+                    if ($role === 'admin') {
+                        $legacy->where('is_admin', true);
+                    } else {
+                        $legacy->whereNull('role')->where(function ($l2) {
+                            $l2->whereNull('is_admin')->orWhere('is_admin', false);
+                        });
+                    }
+                });
             });
         }
 
@@ -58,14 +64,15 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
-            'is_admin' => ['sometimes', 'boolean'],
+            'role' => ['required', 'string', 'in:student,teacher,admin'],
         ]);
 
         $user = new User();
         $user->name = $data['name'];
         $user->email = $data['email'];
         $user->password = Hash::make($data['password']);
-        $user->is_admin = (bool)($data['is_admin'] ?? false);
+        $user->role = $data['role'];
+        $user->is_admin = ($user->role === 'admin');
         $user->save();
 
         return response()->json(['message' => 'User created successfully.', 'user' => $user], 201);
@@ -77,7 +84,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'password' => ['nullable', 'string', 'min:8'],
-            'is_admin' => ['sometimes', 'boolean'],
+            'role' => ['required', 'string', 'in:student,teacher,admin'],
         ]);
 
         $user->name = $data['name'];
@@ -85,7 +92,8 @@ class UserController extends Controller
         if (!empty($data['password'])) {
             $user->password = Hash::make($data['password']);
         }
-        $user->is_admin = (bool)($data['is_admin'] ?? false);
+        $user->role = $data['role'];
+        $user->is_admin = ($user->role === 'admin');
         $user->save();
 
         return response()->json(['message' => 'User updated successfully.', 'user' => $user]);
@@ -100,4 +108,3 @@ class UserController extends Controller
         return response()->json(['message' => 'User deleted successfully.']);
     }
 }
-

@@ -29,12 +29,14 @@
           <input type="password" name="password" class="form-control" placeholder="New password">
           @error('password')<div class="text-danger small">{{ $message }}</div>@enderror
         </div>
-        <div class="col-md-6 d-flex align-items-center">
-          <div class="form-check mt-4">
-            <input class="form-check-input" type="checkbox" value="1" id="is_admin" name="is_admin" {{ old('is_admin', $user->is_admin ? 1 : 0) ? 'checked' : '' }}>
-            <label class="form-check-label" for="is_admin">Administrator</label>
-          </div>
-          @error('is_admin')<div class="text-danger small">{{ $message }}</div>@enderror
+        <div class="col-md-6">
+          <label class="form-label">Role</label>
+          <select name="role" class="form-control">
+            <option value="student" {{ old('role', $user->role ?? ($user->is_admin ? 'admin' : 'student')) === 'student' ? 'selected' : '' }}>Student</option>
+            <option value="teacher" {{ old('role', $user->role ?? ($user->is_admin ? 'admin' : 'student')) === 'teacher' ? 'selected' : '' }}>Teacher</option>
+            <option value="admin" {{ old('role', $user->role ?? ($user->is_admin ? 'admin' : 'student')) === 'admin' ? 'selected' : '' }}>Admin</option>
+          </select>
+          @error('role')<div class="text-danger small">{{ $message }}</div>@enderror
         </div>
         <div class="col-12">
           <button type="submit" class="btn btn-primary">Save Changes</button>
@@ -52,8 +54,8 @@
       const name = form.querySelector('input[name="name"]').value.trim();
       const email = form.querySelector('input[name="email"]').value.trim();
       const password = form.querySelector('input[name="password"]').value;
-      const isAdmin = !!form.querySelector('input[name="is_admin"]').checked;
-      const payload = { name, email, is_admin: isAdmin };
+      const role = form.querySelector('select[name="role"]').value;
+      const payload = { name, email, role };
       if(password && password.length > 0) payload.password = password;
       try {
         const res = await fetch('/api/admin/users/{{ $user->id }}', {

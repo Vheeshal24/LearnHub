@@ -15,6 +15,12 @@
   .users-table thead th { position:sticky; top:0; background:#f8fafc; border-bottom:1px solid var(--border); z-index:1; }
   .users-table tbody tr:hover { background:#f9fafb; }
   .actions { display:flex; gap:6px; justify-content:flex-end; }
+  .modal-backdrop { position:fixed; inset:0; background:rgba(2, 8, 23, 0.45); display:none; align-items:center; justify-content:center; z-index:1000; }
+  .modal-card { background: var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px; max-width:420px; width:calc(100% - 32px); box-shadow: 0 8px 24px rgba(2, 8, 23, 0.55); }
+  .modal-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
+  .field { margin-bottom:10px; }
+  .field label { display:block; margin-bottom:6px; color:var(--muted); }
+  .field input, .field select { width:100%; }
 </style>
 @endsection
 
@@ -22,7 +28,7 @@
 <div class="container py-4" style="padding:0;">
   <div class="users-header" style="margin-bottom:12px;">
     <h1 class="h4" style="margin:0;">Manage Users</h1>
-    <a href="{{ route('admin.users.create') }}" class="badge" style="background:var(--accent);border-color:var(--accent);color:#fff;">Create User</a>
+    <button type="button" id="openCreateUser" class="badge" style="background:var(--accent);border-color:var(--accent);color:#fff;">Create User</button>
   </div>
 
   <div class="stats" style="margin-bottom:12px;">
@@ -47,6 +53,9 @@
   <div id="apiErrorBanner" class="card" style="border-color:#ef4444;background:#fee2e2;color:#7f1d1d;margin-bottom:12px; display:none;">
     <div id="apiErrorText"></div>
   </div>
+  <div id="apiSuccessBanner" class="card" style="border-color:#10b981;background:#ecfdf5;color:#065f46;margin-bottom:12px; display:none;">
+    <div id="apiSuccessText"></div>
+  </div>
 
   <div class="card" style="margin-bottom:12px;">
     <form method="GET" action="{{ route('admin.users.index') }}" class="filter-row" id="usersFilterForm">
@@ -58,8 +67,9 @@
         <label class="muted" style="display:block; margin-bottom:6px;">Role</label>
         <select name="role" style="width:100%;">
           <option value="" {{ $role === null ? 'selected' : '' }}>All</option>
+          <option value="student" {{ $role === 'student' ? 'selected' : '' }}>Students</option>
+          <option value="teacher" {{ $role === 'teacher' ? 'selected' : '' }}>Teachers</option>
           <option value="admin" {{ $role === 'admin' ? 'selected' : '' }}>Admins</option>
-          <option value="user" {{ $role === 'user' ? 'selected' : '' }}>Users</option>
         </select>
       </div>
       <div>
@@ -91,6 +101,49 @@
     <div id="usersPager" style="border-top:1px solid var(--border); padding:12px;"></div>
   </div>
 </div>
+<div id="confirmDialog" class="modal-backdrop">
+  <div class="modal-card">
+    <div class="title" style="margin-bottom:6px;">Confirm Deletion</div>
+    <div class="muted" id="confirmText">Delete this user? This cannot be undone.</div>
+    <div class="modal-actions">
+      <button type="button" id="confirmNo">Cancel</button>
+      <button type="button" id="confirmYes" style="background:#ef4444; border-color:#ef4444;">Delete</button>
+    </div>
+  </div>
+</div>
+<div id="userFormDialog" class="modal-backdrop">
+  <div class="modal-card">
+    <div class="title" id="userFormTitle" style="margin-bottom:6px;">Create User</div>
+    <form id="userForm" class="row" style="gap:8px;">
+      <input type="hidden" name="mode" value="create" />
+      <input type="hidden" name="user_id" value="" />
+      <div class="field" style="width:100%;">
+        <label for="uf_name">Name</label>
+        <input id="uf_name" name="name" type="text" required />
+      </div>
+      <div class="field" style="width:100%;">
+        <label for="uf_email">Email</label>
+        <input id="uf_email" name="email" type="email" required />
+      </div>
+      <div class="field" style="width:100%;">
+        <label for="uf_password">Password</label>
+        <input id="uf_password" name="password" type="password" />
+      </div>
+      <div class="field" style="width:100%;">
+        <label for="uf_role">Role</label>
+        <select id="uf_role" name="role" required>
+          <option value="student">Student</option>
+          <option value="teacher">Teacher</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+    </form>
+    <div class="modal-actions">
+      <button type="button" id="userFormCancel">Cancel</button>
+      <button type="button" id="userFormSave" style="background:var(--accent); border-color:var(--accent); color:#fff;">Save</button>
+    </div>
+  </div>
+  </div>
 <script>
   (function(){
     const form = document.getElementById('usersFilterForm');
@@ -101,6 +154,18 @@
     function setErrorBanner(text){
       const b = document.getElementById('apiErrorBanner');
       const t = document.getElementById('apiErrorText');
+      if(!b || !t) return;
+      if(text && String(text).trim() !== ''){
+        t.textContent = text;
+        b.style.display = 'block';
+      } else {
+        t.textContent = '';
+        b.style.display = 'none';
+      }
+    }
+    function setSuccessBanner(text){
+      const b = document.getElementById('apiSuccessBanner');
+      const t = document.getElementById('apiSuccessText');
       if(!b || !t) return;
       if(text && String(text).trim() !== ''){
         t.textContent = text;
@@ -178,15 +243,18 @@
         return;
       }
       tbody.innerHTML = rows.map(function(u){
-        const isAdmin = !!u.is_admin;
+        const r = (u.role || (u.is_admin ? 'admin' : 'student'));
+        const isAdmin = r === 'admin';
         const verified = !!u.email_verified_at;
         const created = (u.created_at || '').slice(0, 10);
         const canDelete = USER_ID ? (String(USER_ID) !== String(u.id)) : true;
-        const roleBadge = isAdmin
+        const roleBadge = (r === 'admin')
           ? '<span class="badge" style="background:#ecfdf5;border-color:#10b981;color:#065f46;">Admin</span>'
-          : '<span class="badge" style="background:#f1f5f9;border-color:#cbd5e1;color:#475569;">User</span>';
+          : (r === 'teacher')
+            ? '<span class="badge" style="background:#eef2ff;border-color:#c7d2fe;color:#3730a3;">Teacher</span>'
+            : '<span class="badge" style="background:#f1f5f9;border-color:#cbd5e1;color:#475569;">Student</span>';
         const deleteBtn = canDelete
-          ? '<button type="button" class="badge js-delete-user" data-user-id="'+u.id+'" style="background:#fee2e2;border-color:#fecaca;color:#7f1d1d;">Delete</button>'
+          ? '<button type="button" class="badge js-delete-user" data-user-id="'+u.id+'" data-user-name="'+(u.name || '')+'" data-user-role="'+r+'" style="background:#fee2e2;border-color:#fecaca;color:#7f1d1d;">Delete</button>'
           : '';
         return (
           '<tr>' +
@@ -200,7 +268,7 @@
             '<td class="muted">'+created+'</td>' +
             '<td>' +
               '<div class="actions">' +
-                '<a href="/admin/users/'+u.id+'/edit" class="badge" style="background:#e0f2fe;border-color:#93c5fd;color:#1e40af;">Edit</a>' +
+                '<button type="button" class="badge js-edit-user" data-user-id="'+u.id+'" data-user-name="'+(u.name || '')+'" data-user-email="'+(u.email || '')+'" data-user-role="'+r+'" style="background:#e0f2fe;border-color:#93c5fd;color:#1e40af;">Edit</button>' +
                 deleteBtn +
               '</div>' +
             '</td>' +
@@ -208,18 +276,125 @@
         );
       }).join('');
       bindDelete();
+      bindEdit();
     }
+
+    const confirmDialog = document.getElementById('confirmDialog');
+    const confirmText = document.getElementById('confirmText');
+    const confirmYes = document.getElementById('confirmYes');
+    const confirmNo = document.getElementById('confirmNo');
+    let pendingDeleteId = null;
+    const userFormDialog = document.getElementById('userFormDialog');
+    const userFormTitle = document.getElementById('userFormTitle');
+    const userForm = document.getElementById('userForm');
+    const userFormCancel = document.getElementById('userFormCancel');
+    const userFormSave = document.getElementById('userFormSave');
+    const openCreateUser = document.getElementById('openCreateUser');
+
+    function openDeleteConfirm(id, name, role){
+      pendingDeleteId = id;
+      const roleText = role ? ' (' + String(role).charAt(0).toUpperCase() + String(role).slice(1) + ')' : '';
+      confirmText.textContent = 'Delete ' + (name || 'this user') + roleText + '? This cannot be undone.';
+      confirmDialog.style.display = 'flex';
+    }
+
+    function closeDeleteConfirm(){
+      pendingDeleteId = null;
+      confirmDialog.style.display = 'none';
+    }
+
+    confirmNo.addEventListener('click', closeDeleteConfirm);
+    confirmDialog.addEventListener('click', function(e){ if(e.target === confirmDialog) closeDeleteConfirm(); });
+    document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeDeleteConfirm(); });
+
+    confirmYes.addEventListener('click', async function(){
+      if(!pendingDeleteId) return;
+      try {
+        const res = await fetch('/api/admin/users/' + pendingDeleteId, { method: 'DELETE', credentials: 'same-origin', headers: { 'Accept': 'application/json' } });
+        if(!res.ok){ alert('Failed to delete user'); return; }
+        closeDeleteConfirm();
+        setSuccessBanner('User deleted successfully');
+        loadUsers(currentPage);
+      } catch(_) { alert('Network error'); }
+    });
+
+    function openUserForm(mode, payload){
+      userForm.reset();
+      userForm.querySelector('input[name="mode"]').value = mode;
+      userForm.querySelector('input[name="user_id"]').value = payload && payload.id ? payload.id : '';
+      userFormTitle.textContent = (mode === 'edit') ? 'Edit User' : 'Create User';
+      document.getElementById('uf_password').placeholder = (mode === 'edit') ? 'Leave blank to keep current' : '';
+      document.getElementById('uf_name').value = payload && payload.name ? payload.name : '';
+      document.getElementById('uf_email').value = payload && payload.email ? payload.email : '';
+      document.getElementById('uf_role').value = payload && payload.role ? payload.role : 'student';
+      userFormDialog.style.display = 'flex';
+    }
+    function closeUserForm(){
+      userFormDialog.style.display = 'none';
+    }
+    userFormCancel.addEventListener('click', closeUserForm);
+    userFormDialog.addEventListener('click', function(e){ if(e.target === userFormDialog) closeUserForm(); });
+    document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeUserForm(); });
+    openCreateUser.addEventListener('click', function(){ openUserForm('create', null); });
+    userFormSave.addEventListener('click', async function(){
+      const mode = userForm.querySelector('input[name="mode"]').value;
+      const id = userForm.querySelector('input[name="user_id"]').value;
+      const name = document.getElementById('uf_name').value.trim();
+      const email = document.getElementById('uf_email').value.trim();
+      const password = document.getElementById('uf_password').value;
+      const role = document.getElementById('uf_role').value;
+      const body = { name, email, role };
+      if(mode === 'create' || (password && password.trim() !== '')) body.password = password;
+      try {
+        let res;
+        if(mode === 'edit' && id){
+          res = await fetch('/api/admin/users/' + id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(body)
+          });
+        } else {
+          res = await fetch('/api/admin/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(body)
+          });
+        }
+        if(!res.ok){
+          let msg = 'Failed';
+          try { const data = await res.json(); if(data && data.message) msg = data.message; } catch(_){}
+          setErrorBanner(msg);
+          return;
+        }
+        closeUserForm();
+        setErrorBanner('');
+        setSuccessBanner(mode === 'edit' ? 'User updated successfully' : 'User created successfully');
+        loadUsers(currentPage);
+      } catch(_) {
+        setErrorBanner('Network error');
+      }
+    });
 
     function bindDelete(){
       document.querySelectorAll('button.js-delete-user').forEach(function(btn){
-        btn.addEventListener('click', async function(){
+        btn.addEventListener('click', function(){
           const id = btn.getAttribute('data-user-id');
-          if(!confirm('Delete this user? This cannot be undone.')) return;
-          try {
-          const res = await fetch('/api/admin/users/' + id, { method: 'DELETE', credentials: 'same-origin', headers: { 'Accept': 'application/json' } });
-            if(!res.ok){ alert('Failed to delete user'); return; }
-            loadUsers(currentPage);
-          } catch(_) { alert('Network error'); }
+          const name = btn.getAttribute('data-user-name') || '';
+          const role = btn.getAttribute('data-user-role') || '';
+          openDeleteConfirm(id, name, role);
+        });
+      });
+    }
+    function bindEdit(){
+      document.querySelectorAll('button.js-edit-user').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          const id = btn.getAttribute('data-user-id');
+          const name = btn.getAttribute('data-user-name') || '';
+          const email = btn.getAttribute('data-user-email') || '';
+          const role = btn.getAttribute('data-user-role') || 'student';
+          openUserForm('edit', { id, name, email, role });
         });
       });
     }
@@ -246,7 +421,7 @@
       });
     }
 
-    form.addEventListener('submit', function(e){ e.preventDefault(); loadUsers(1); });
+    form.addEventListener('submit', function(e){ e.preventDefault(); setSuccessBanner(''); loadUsers(1); });
     document.addEventListener('DOMContentLoaded', function(){ loadStats(); loadUsers(1); });
   })();
 </script>

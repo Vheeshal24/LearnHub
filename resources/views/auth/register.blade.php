@@ -23,28 +23,20 @@
             <div class="muted">Confirm Password</div>
             <input type="password" name="password_confirmation" required autocomplete="new-password" style="width:100%;" />
         </label>
-        <label style="width:100%;align-items:center;display:flex;gap:8px;">
-            <input type="checkbox" id="register_as_admin" name="register_as_admin" />
-            <span>Register as admin</span>
+        <label style="width:100%;">
+            <div class="muted">Role</div>
+            <select name="role" required style="width:100%;">
+                <option value="student" {{ old('role') == 'student' ? 'selected' : '' }}>Student</option>
+                <option value="teacher" {{ old('role') == 'teacher' ? 'selected' : '' }}>Teacher</option>
+            </select>
         </label>
-        <p class="muted" style="font-size:12px;">If selected, you’ll be redirected to the admin registration page.</p>
         <div class="row" style="justify-content:space-between;width:100%;">
             <button type="submit">Register</button>
-            <a href="{{ route('login') }}">Already have an account? Login</a>
+            <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                <a href="{{ route('login') }}" style="font-size:14px;">Already have an account? Login</a>
+                <a href="{{ route('admin.register') }}" style="font-size:12px; color:var(--muted); margin-top:4px;">Register as Admin</a>
+            </div>
         </div>
     </form>
-    <script>
-        (function(){
-            const form = document.getElementById('registerForm');
-            if(!form) return;
-            form.addEventListener('submit', function(e){
-                const admin = document.getElementById('register_as_admin');
-                if(admin && admin.checked){
-                    e.preventDefault();
-                    window.location.href = "{{ route('admin.register') }}";
-                }
-            });
-        })();
-    </script>
 </div>
 @endsection

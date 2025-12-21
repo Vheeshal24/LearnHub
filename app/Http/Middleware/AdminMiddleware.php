@@ -14,7 +14,8 @@ class AdminMiddleware
             return redirect()->route('login')->with('status', 'Please login to access admin');
         }
 
-        if (!auth()->user()->is_admin) {
+        $u = auth()->user();
+        if (!($u->is_admin || ($u->role ?? null) === 'admin')) {
             abort(403, 'Unauthorized');
         }
 

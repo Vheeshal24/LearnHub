@@ -20,16 +20,25 @@ class ProfileController extends Controller
     {
         $user = Auth::user();
 
-        $data = $request->validate([
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
             'password' => ['nullable', 'string', 'min:8'],
-        ]);
+        ];
+
+        if ($user->role !== 'admin') {
+            $rules['role'] = ['required', 'string', 'in:student,teacher'];
+        }
+
+        $data = $request->validate($rules);
 
         $user->name = $data['name'];
         $user->email = $data['email'];
         if (!empty($data['password'])) {
             $user->password = $data['password'];
+        }
+        if ($user->role !== 'admin' && isset($data['role'])) {
+            $user->role = $data['role'];
         }
         $user->save();
 
