@@ -12,7 +12,7 @@ class UserAdminController extends Controller
     public function index(Request $request)
     {
         $q = trim((string) $request->input('q'));
-        $role = $request->input('role'); // 'admin' or 'user' or null
+        $role = $request->input('role');
 
         $query = User::query();
         if ($q !== '') {
@@ -21,11 +21,17 @@ class UserAdminController extends Controller
                     ->orWhere('email', 'LIKE', "%$q%");
             });
         }
-        if ($role === 'admin') {
-            $query->where('is_admin', true);
-        } elseif ($role === 'user') {
-            $query->where(function ($sub) {
-                $sub->whereNull('is_admin')->orWhere('is_admin', false);
+        if (in_array($role, ['student', 'teacher', 'admin'], true)) {
+            $query->where(function ($sub) use ($role) {
+                $sub->where('role', $role)->orWhere(function ($legacy) use ($role) {
+                    if ($role === 'admin') {
+                        $legacy->where('is_admin', true);
+                    } else {
+                        $legacy->whereNull('role')->where(function ($l2) {
+                            $l2->whereNull('is_admin')->orWhere('is_admin', false);
+                        });
+                    }
+                });
             });
         }
 
@@ -33,7 +39,7 @@ class UserAdminController extends Controller
 
         $stats = [
             'total' => User::count(),
-            'admins' => User::where('is_admin', true)->count(),
+            'admins' => User::where('role', 'admin')->orWhere('is_admin', true)->count(),
             'new_last_7' => User::where('created_at', '>=', now()->subDays(7))->count(),
         ];
 
@@ -56,14 +62,15 @@ class UserAdminController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
-            'is_admin' => ['sometimes', 'boolean'],
+            'role' => ['required', 'string', 'in:student,teacher,admin'],
         ]);
 
         $user = new User();
         $user->name = $data['name'];
         $user->email = $data['email'];
         $user->password = Hash::make($data['password']);
-        $user->is_admin = (bool)($data['is_admin'] ?? false);
+        $user->role = $data['role'];
+        $user->is_admin = ($user->role === 'admin');
         $user->save();
 
         return redirect()->route('admin.users.index')->with('status', 'User created successfully.');
@@ -80,7 +87,7 @@ class UserAdminController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
             'password' => ['nullable', 'string', 'min:8'],
-            'is_admin' => ['sometimes', 'boolean'],
+            'role' => ['required', 'string', 'in:student,teacher,admin'],
         ]);
 
         $user->name = $data['name'];
@@ -88,7 +95,8 @@ class UserAdminController extends Controller
         if (!empty($data['password'])) {
             $user->password = Hash::make($data['password']);
         }
-        $user->is_admin = (bool)($data['is_admin'] ?? false);
+        $user->role = $data['role'];
+        $user->is_admin = ($user->role === 'admin');
         $user->save();
 
         return redirect()->route('admin.users.index')->with('status', 'User updated successfully.');

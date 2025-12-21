@@ -16,6 +16,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
         // allow admin creation via registration
         'is_admin',
     ];

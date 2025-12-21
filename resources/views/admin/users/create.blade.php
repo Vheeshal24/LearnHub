@@ -27,10 +27,14 @@
         <input type="password" name="password" required>
         @error('password')<div class="muted" style="color:#b91c1c; font-size:12px; margin-top:4px;">{{ $message }}</div>@enderror
       </div>
-      <div style="min-width:220px; display:flex; align-items:center;">
-        <label for="is_admin" class="muted" style="margin-right:8px;">Administrator</label>
-        <input type="checkbox" value="1" id="is_admin" name="is_admin" {{ old('is_admin') ? 'checked' : '' }}>
-        @error('is_admin')<div class="muted" style="color:#b91c1c; font-size:12px; margin-left:8px;">{{ $message }}</div>@enderror
+      <div style="min-width:220px;">
+        <label class="muted" style="display:block; margin-bottom:6px;">Role</label>
+        <select name="role" id="role" style="width:100%;">
+          <option value="student" {{ old('role') === 'student' ? 'selected' : '' }}>Student</option>
+          <option value="teacher" {{ old('role') === 'teacher' ? 'selected' : '' }}>Teacher</option>
+          <option value="admin" {{ old('role') === 'admin' ? 'selected' : '' }}>Admin</option>
+        </select>
+        @error('role')<div class="muted" style="color:#b91c1c; font-size:12px; margin-top:4px;">{{ $message }}</div>@enderror
       </div>
       <div style="width:100%; display:flex; justify-content:flex-start;">
         <button type="submit">Create</button>
@@ -47,13 +51,13 @@
       const name = form.querySelector('input[name="name"]').value.trim();
       const email = form.querySelector('input[name="email"]').value.trim();
       const password = form.querySelector('input[name="password"]').value;
-      const isAdmin = !!form.querySelector('input[name="is_admin"]').checked;
+      const role = form.querySelector('select[name="role"]').value;
       try {
         const res = await fetch('/api/admin/users', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
           credentials: 'same-origin',
-          body: JSON.stringify({ name, email, password, is_admin: isAdmin })
+          body: JSON.stringify({ name, email, password, role })
         });
         if(!res.ok){
           let msg = 'Failed to create user';

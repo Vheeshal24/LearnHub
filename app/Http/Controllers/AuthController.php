@@ -27,7 +27,11 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
-            return redirect()->intended('/')->with('status', 'Logged in successfully');
+            $user = Auth::user();
+            $default = ((($user->role ?? null) === 'admin') || ($user->is_admin ?? false))
+                ? route('admin.courses.index')
+                : route('dashboard');
+            return redirect()->intended($default)->with('status', 'Logged in successfully');
         }
 
         return back()->withErrors([
@@ -46,18 +50,20 @@ class AuthController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', 'min:8'],
+            'role' => ['required', 'string', 'in:student,teacher'],
         ]);
 
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
+            'role' => $data['role'],
         ]);
 
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect('/')->with('status', 'Account created and logged in');
+        return redirect()->intended(route('dashboard'))->with('status', 'Account created and logged in');
     }
 
     public function showAdminRegisterForm()
@@ -77,13 +83,14 @@ class AuthController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
+            'role' => 'admin',
             'is_admin' => true,
         ]);
 
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect('/')->with('status', 'Admin account created and logged in');
+        return redirect()->intended(route('admin.courses.index'))->with('status', 'Admin account created and logged in');
     }
 
     public function logout(Request $request)

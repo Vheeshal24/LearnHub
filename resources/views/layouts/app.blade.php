@@ -65,12 +65,13 @@
         <div class="row" style="justify-content: space-between;">
             <div class="brand"><a href="/">LearnHub</a></div>
             <nav class="row">
-                <a href="/">Home</a>
                 @auth
-                    <a href="{{ route('dashboard') }}">Dashboard</a>
+                    @if (!(((auth()->user()->role ?? null) === 'admin') || (auth()->user()->is_admin ?? false)))
+                        <a href="/">Home</a>
+                    @endif
                     <a href="{{ route('profile.edit') }}">Profile</a>
-                    @if (auth()->user()->is_admin)
-                        <a href="/admin/courses">Admin</a>
+                    @if (((auth()->user()->role ?? null) === 'admin') || (auth()->user()->is_admin ?? false))
+                        <a href="{{ route('admin.courses.index') }}">Admin</a>
                         <a href="{{ route('admin.users.index') }}">Users</a>
                         <a href="{{ route('admin.recommendations.settings') }}">Recommendations</a>
                         <a href="{{ route('admin.recommendations.featured.index') }}">Featured</a>
@@ -83,6 +84,7 @@
                     </form>
                 @endauth
                 @guest
+                    <a href="/">Home</a>
                     <a href="{{ route('login') }}">Login</a>
                     <a href="{{ route('register') }}">Register</a>
                 @endguest
