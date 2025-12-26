@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\Lesson;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class LessonAdminPageController extends Controller
 {
@@ -38,7 +39,13 @@ class LessonAdminPageController extends Controller
             'position' => 'nullable|integer|min:0',
             'published' => 'nullable|boolean',
             'quiz_json' => 'nullable|string',
+            'material_file' => 'nullable|file|mimes:pdf|max:10240',
         ]);
+
+        if ($request->hasFile('material_file')) {
+            $data['material_file'] = $request->file('material_file')
+                ->store('lesson-materials', 'public');
+        }
 
         $data['course_id'] = $course->id;
         Lesson::create($data);
@@ -70,7 +77,20 @@ class LessonAdminPageController extends Controller
             'position' => 'nullable|integer|min:0',
             'published' => 'nullable|boolean',
             'quiz_json' => 'nullable|string',
+            'material_file' => 'nullable|file|mimes:pdf|max:10240',
         ]);
+
+        if ($request->hasFile('material_file')) {
+
+            // delete old file
+            if ($lesson->material_file) {
+                Storage::disk('public')->delete($lesson->material_file);
+            }
+
+            // store new file
+            $data['material_file'] = $request->file('material_file')
+                ->store('lesson-materials', 'public');
+        }
 
         $lesson->update($data);
 

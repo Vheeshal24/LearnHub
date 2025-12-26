@@ -6,7 +6,7 @@
 <h1>Admin / Edit Lesson</h1>
 <div class="muted">Course: <a href="{{ route('admin.lessons.index', $course->slug) }}">{{ $course->title }}</a></div>
 
-<form method="POST" action="{{ route('admin.lessons.update', [$course->slug, $lesson->id]) }}" class="card" style="margin-top:12px;">
+<form method="POST" enctype="multipart/form-data" action="{{ route('admin.lessons.update', [$course->slug, $lesson->slug]) }}" class="card" style="margin-top:12px;">
     @csrf
     @method('PUT')
     <div class="row" style="gap:12px;">
@@ -29,6 +29,10 @@
         <div style="flex:1;">
             <label>Content URL (YouTube/MP4/Link)</label>
             <input type="text" name="content_url" value="{{ old('content_url', $lesson->content_url) }}" />
+        </div>
+        <div style="margin-top:12px;">
+            <label>Change Lesson Material (PDF)</label>
+            <input type="file" name="material_file" accept=".pdf">
         </div>
         <div style="width:220px;">
             <label>Duration (minutes)</label>

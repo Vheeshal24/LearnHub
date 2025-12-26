@@ -6,7 +6,7 @@
 <h1>Admin / Create Lesson</h1>
 <div class="muted">Course: <a href="{{ route('admin.lessons.index', $course->slug) }}">{{ $course->title }}</a></div>
 
-<form method="POST" action="{{ route('admin.lessons.store', $course->slug) }}" class="card" style="margin-top:12px;">
+<form method="POST" action="{{ route('admin.lessons.store', $course->slug) }}" enctype="multipart/form-data" class="card" style="margin-top:12px;">
     @csrf
     <div class="row" style="gap:12px;">
         <div style="flex:1;">
@@ -28,6 +28,11 @@
         <div style="flex:1;">
             <label>Content URL (YouTube/MP4/Link)</label>
             <input type="text" name="content_url" value="{{ old('content_url') }}" />
+        </div>
+        <div style="margin-top:12px;">
+            <label>Lesson Material/Note</label>
+            <input type="file" name="material_file" accept=".pdf" />
+            <div class="muted">Upload PDF notes or learning materials.</div>
         </div>
         <div style="width:220px;">
             <label>Duration (minutes)</label>

@@ -5,7 +5,7 @@
 @section('content')
     <div class="row" style="justify-content: space-between; margin-bottom: 16px;">
         <div>
-            <a href="{{ route('courses.show', $course->slug) }}">← Back to Course</a>
+            <a href="{{ route('courses.show', $course->slug) }}" style="color: white;">← Back to Course</a>
         </div>
         <div class="pill">{{ $course->title }}</div>
     </div>
@@ -33,6 +33,16 @@
             </div>
         @endif
 
+        @if($lesson->material_file)
+            <div style="margin-top:12px;">
+                <a href="{{ asset('storage/' . $lesson->material_file) }}"
+                target="_blank"
+                class="badge">
+                    📄 View Lesson Material/Note
+                </a>
+            </div>
+        @endif
+
         @if($isCompleted)
             <div class="badge" style="margin-top:12px;color:#10b981;border-color:#10b98144;">✔ Completed</div>
         @endif
@@ -52,19 +62,24 @@
         </div>
     </div>
 
-    @if(!empty($lesson->quiz_json))
+    @if(!empty($lesson->quiz_json) && !$isCompleted)
     <div class="card" style="margin-bottom:16px;">
         <div class="section-title">Quiz</div>
+        @if($quizAttempt)
+            <div class="muted" style="margin-bottom:8px;">
+                Previous attempt score: {{ $quizAttempt->score }} / {{ $quizAttempt->total }}
+            </div>
+        @endif
         <div id="quiz-container"></div>
-        <div id="quiz-result" class="muted" style="margin-top:8px;"></div>
+        <div id="quiz-result" class="muted" style="margin-top:8px;">
+            @if($quizAttempt)
+                Previous score: {{ $quizAttempt->score }} / {{ $quizAttempt->total }}
+            @endif
+        </div>
         <div class="row" style="gap:8px; margin-top:12px;">
             <button id="submit-quiz" class="pill">Submit Quiz</button>
-            <form id="complete-form" method="POST" action="{{ route('lessons.complete', [$course->slug, $lesson->slug]) }}">
-                @csrf
-                <button type="submit" class="pill" style="background: var(--accent-2); border-color: var(--accent-2); color:#fff;">Mark Completed</button>
-            </form>
         </div>
-        <script type="application/json" id="quiz-data">{{ $lesson->quiz_json }}</script>
+        <script type="application/json" id="quiz-data">{!! $lesson->quiz_json !!}</script>
         <script>
             (function(){
                 const root = document.getElementById('quiz-container');
@@ -108,23 +123,39 @@
 
                 const submitBtn = document.getElementById('submit-quiz');
                 const resultEl = document.getElementById('quiz-result');
-                submitBtn.addEventListener('click', function(){
+                submitBtn.addEventListener('click', function () {
                     let correct = 0;
+
                     data.questions.forEach((q, qi) => {
-                        const selected = document.querySelector('input[name="q_'+qi+'"]:checked');
-                        const answerIndex = typeof q.answer === 'number' ? q.answer : -1;
-                        if(selected && Number(selected.value) === answerIndex){
+                        const selected = document.querySelector('input[name="q_' + qi + '"]:checked');
+                        const answerIndex = Number(q.answer);
+                        if (selected && Number(selected.value) === Number(q.answer)) {
                             correct++;
                         }
                     });
+
                     const total = data.questions.length;
                     resultEl.textContent = 'Score: ' + correct + ' / ' + total;
-                    if(correct === total){
-                        resultEl.textContent += ' — Great job! Marking completed…';
-                        // Auto-submit completion form
-                        const completeForm = document.getElementById('complete-form');
-                        if(completeForm){ completeForm.submit(); }
-                    }
+
+                    fetch("{{ route('lessons.quiz.attempt', [$course->slug, $lesson->slug]) }}", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                            "Accept": "application/json"
+                        },
+                        body: JSON.stringify({
+                            score: correct,
+                            total: total
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.completed) {
+                            resultEl.textContent += ' — Great job! Lesson completed.';
+                            setTimeout(() => location.reload(), 1500);
+                        }
+                    });
                 });
             })();
         </script>

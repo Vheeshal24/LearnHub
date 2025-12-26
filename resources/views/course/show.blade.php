@@ -67,7 +67,7 @@ if (!function_exists('difficulty_badge')) {
             <h3 style="margin-top:10px;">You will learn</h3>
             <div class="row">
                 @foreach ($tags as $t)
-                    <span class="badge" style="color:#a7f3d0;border-color:#10b98144;">#{{ $t }}</span>
+                    <span class="badge" style="color:black;border-color:#10b98144;">#{{ $t }}</span>
                 @endforeach
             </div>
         @endif

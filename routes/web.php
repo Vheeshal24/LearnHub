@@ -23,6 +23,7 @@ Route::post('/courses/{slug}/enroll', [CoursePageController::class, 'enroll'])->
 Route::get('/courses/{slug}/lessons/{lessonSlug}', [LessonPageController::class, 'show'])->name('lessons.show');
 // Add completion endpoint for lessons
 Route::post('/courses/{slug}/lessons/{lessonSlug}/complete', [LessonPageController::class, 'complete'])->name('lessons.complete');
+Route::post('/courses/{slug}/lessons/{lessonSlug}/quiz', [LessonPageController::class, 'saveQuizAttempt'])->middleware('auth')->name('lessons.quiz.attempt');
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');

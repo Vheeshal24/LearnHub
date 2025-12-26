@@ -11,7 +11,7 @@ class Lesson extends Model
     use HasFactory;
 
     protected $fillable = [
-        'course_id', 'title', 'slug', 'description', 'content_url', 'duration_minutes', 'position', 'published', 'quiz_json',
+        'course_id', 'title', 'slug', 'description', 'content_url', 'material_file', 'duration_minutes', 'position', 'published', 'quiz_json',
     ];
 
     protected $casts = [
