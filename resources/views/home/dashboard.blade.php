@@ -40,7 +40,7 @@
                         <span class="badge">{{ ucfirst($course->category) }}</span>
                         <span class="badge">{{ difficulty_badge($course) }}</span>
                     </div>
-                    <div class="muted">Progress: {{ $course->activities()->where('user_id', auth()->id())->where('type','lesson_completed')->count() }} completed</div>
+                    <div class="muted">Progress: {{ $progress[$course->id] ?? 0 }}%</div>
                     <a class="badge" href="{{ route('courses.show', $course->slug) }}">Resume</a>
                 </div>
             </div>
