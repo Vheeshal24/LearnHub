@@ -34,3 +34,4 @@ class Lesson extends Model
         });
     }
 }
+

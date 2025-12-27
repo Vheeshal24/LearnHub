@@ -14,6 +14,9 @@ use App\Http\Controllers\Admin\RecommendationDashboardController;
 use App\Http\Controllers\Admin\RecommendationLogsController;
 use App\Http\Controllers\Admin\UserAdminController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\LearningGoalController;
+use App\Http\Controllers\LearningAnalyticsController;
+
 
 Route::get('/', [HomeController::class, 'landing']);
 Route::get('/browse', [HomeController::class, 'index'])->name('browse');
@@ -85,3 +88,37 @@ Route::prefix('admin')->middleware([\Illuminate\Auth\Middleware\Authenticate::cl
     Route::put('/users/{user}', [UserAdminController::class, 'update'])->name('admin.users.update');
     Route::delete('/users/{user}', [UserAdminController::class, 'destroy'])->name('admin.users.destroy');
 });
+
+
+
+Route::middleware(['auth'])->group(function() {
+    // Learning Goals CRUD
+    Route::middleware(['auth'])->group(function () {
+    // List goals (optional, if you want a separate page for them)
+    Route::get('learning-goals', [LearningGoalController::class, 'index'])->name('learning_goals.index');
+    
+    // Create Goal Page
+    Route::get('learning-goals/create', [LearningGoalController::class, 'create'])->name('learning_goals.create');
+    
+    // Store New Goal
+    Route::post('learning-goals', [LearningGoalController::class, 'store'])->name('learning_goals.store');
+    
+    // Update Goal
+    Route::put('learning-goals/{goal}', [LearningGoalController::class, 'update'])->name('learning_goals.update');
+    Route::get('learning-goals/{goal}/edit', [App\Http\Controllers\LearningGoalController::class, 'edit'])->name('learning_goals.edit');
+    // Delete Goal
+    Route::delete('learning-goals/{goal}', [LearningGoalController::class, 'destroy'])->name('learning_goals.destroy');
+});
+
+    // Analytics Dashboard & Export
+    Route::middleware(['auth'])->group(function () {
+    Route::get('analytics/dashboard', [LearningAnalyticsController::class, 'dashboard'])->name('analytics.dashboard');
+    Route::get('analytics/export-pdf', [LearningAnalyticsController::class, 'exportPDF'])->name('analytics.exportPDF');
+    Route::get('analytics/export-csv', [LearningAnalyticsController::class, 'exportCSV'])->name('analytics.exportCSV');
+});
+
+});
+
+
+
+

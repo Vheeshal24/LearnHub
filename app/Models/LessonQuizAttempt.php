@@ -12,4 +12,9 @@ class LessonQuizAttempt extends Model
         'score',
         'total',
     ];
+
+    public function lesson()
+    {
+        return $this->belongsTo(Lesson::class);
+    }
 }

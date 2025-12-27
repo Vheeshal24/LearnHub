@@ -5,8 +5,14 @@
 @section('content')
 <div class="grid">
     <div class="card">
-        <h2 style="margin-top:0;">Welcome back!</h2>
-        <p class="muted">Here’s your learning overview and recommended courses.</p>
+    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 8px;">
+        <h2 style="margin: 0; line-height: 1;">Welcome back!</h2>
+        
+        <a href="{{ route('analytics.dashboard') }}" class="analytics-btn" style="padding: 6px 16px; font-size: 14px;">
+            <i class="fas fa-chart-line"></i> Learning Analytics
+        </a>
+    </div>
+    <p class="muted" style="margin: 0;">Here’s your learning overview and recommended courses.</p>
     </div>
 
     <div class="card">
@@ -81,6 +87,7 @@ function difficulty_badge($course) {
 @endphp
 
 @push('styles')
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
 .grid { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
 .card { border:1px solid var(--border); border-radius:10px; padding:12px; }
@@ -90,8 +97,32 @@ function difficulty_badge($course) {
 .title-row { display:flex; gap:8px; align-items:center; }
 .badge { border:1px solid var(--border); border-radius:999px; padding:4px 8px; font-size:12px; }
 .muted { color: var(--muted); }
+
+.analytics-btn {
+    background-color: #10afd7ff;
+    color: white !important;
+    border: none;
+    padding: 8px 25px;
+    border-radius: 17px;
+    font-size: 14px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    transition: background-color 0.2s;
+}
+.analytics-btn:hover {
+    background-color: #10afd7ff;
+}
+
 @media (max-width: 820px) {
   .grid { grid-template-columns: 1fr; }
+  .card[style*="display: flex"] {
+      flex-direction: column;
+      align-items: flex-start !important;
+      gap: 10px;
+  }
 }
 </style>
 @endpush
