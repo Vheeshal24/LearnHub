@@ -209,7 +209,7 @@
                                                 @else
                                                     <span class="goal-time text-primary">
                                                         <i class="far fa-clock"></i>
-                                                        <span class="countdown-timer" data-end="{{ $endTimeJs }}">Loading...</span>
+                                                        <span class="countdown-timer" data-end="{{ $goal->target_completion_time }}">Loading...</span>
                                                     </span>
                                                 @endif
                                             </div>
@@ -283,7 +283,7 @@ function updateTimers() {
     const timers = document.querySelectorAll('.countdown-timer');
     const now = new Date().getTime();
     timers.forEach(timer => {
-        const endTime = parseInt(timer.getAttribute('data-end'));
+        const endTime = new Date(timer.getAttribute('data-end')).getTime();
         const distance = endTime - now;
         if(distance < 0) {
             timer.innerText = "Overdue";
