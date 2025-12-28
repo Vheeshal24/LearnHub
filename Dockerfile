@@ -10,14 +10,15 @@ RUN npm run build
 FROM richarvey/nginx-php-fpm:latest
 WORKDIR /var/www/html
 
-# --- ADDED FOR POSTGRES ---
-# Install postgres client libraries so PHP can communicate with Render's DB
+# Install postgres client libraries
 RUN apk add --no-cache postgresql-dev \
     && docker-php-ext-install pdo_pgsql
-# --------------------------
 
-# Copy app files
+# Copy everything first
 COPY . .
+
+# --- CRITICAL: Give the script execute permissions ---
+RUN chmod +x /var/www/html/scripts/00-laravel-deploy.sh
 
 # Copy built frontend from Stage 1
 COPY --from=frontend /app/public/build ./public/build
@@ -30,7 +31,7 @@ ENV WEBROOT /var/www/html/public
 ENV APP_ENV production
 ENV RUN_SCRIPTS 1
 
-# Permissions
+# Permissions for Laravel folders
 RUN chmod -R 775 storage bootstrap/cache
 
 CMD ["/start.sh"]
