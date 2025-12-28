@@ -30,6 +30,9 @@ RUN composer install --no-dev --optimize-autoloader
 ENV WEBROOT /var/www/html/public
 ENV APP_ENV production
 ENV RUN_SCRIPTS 1
+# ADD THIS LINE BELOW
+ENV ERRORS_PAGES 0
+ENV nginx_config_file /var/www/html/conf/nginx/nginx-site.conf
 
 # Permissions for Laravel folders
 RUN chmod -R 775 storage bootstrap/cache
