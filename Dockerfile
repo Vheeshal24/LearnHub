@@ -1,36 +1,31 @@
 # Stage 1 - Build Frontend (Vite)
-FROM node:18 AS frontend
+FROM node:18-alpine AS frontend
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
 RUN npm run build
 
-# Stage 2 - Backend (Laravel + PHP + Composer)
-FROM php:8.2-fpm AS backend
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    git curl unzip libpq-dev libonig-dev libzip-dev zip \
-    && docker-php-ext-install pdo pdo_mysql mbstring zip
-
-# Install Composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-
-WORKDIR /var/www
+# Stage 2 - Backend (Laravel + PHP + Nginx)
+FROM richarvey/nginx-php-fpm:latest
+WORKDIR /var/www/html
 
 # Copy app files
 COPY . .
 
-# Copy built frontend from Stage 1
-COPY --from=asset-builder /app/public/build ./public/build
+# Copy built frontend from Stage 1 (Matched the name 'frontend' here)
+COPY --from=frontend /app/public/build ./public/build
 
-# Install PHP dependencies
+# Install PHP dependencies via Composer (This image already has composer)
 RUN composer install --no-dev --optimize-autoloader
 
-# Laravel setup
-RUN php artisan config:clear && \
-    php artisan route:clear && \
-    php artisan view:clear
+# Render Config
+ENV WEBROOT /var/www/html/public
+ENV APP_ENV production
+ENV RUN_SCRIPTS 1
 
-CMD ["php-fpm"]
+# Permissions
+RUN chmod -R 775 storage bootstrap/cache
+
+# The richarvey image uses /start.sh to launch Nginx and PHP together
+CMD ["/start.sh"]
