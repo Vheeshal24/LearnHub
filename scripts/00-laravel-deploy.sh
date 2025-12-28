@@ -2,7 +2,7 @@
 echo "Running deployment script..."
 
 # Navigate to project root
-cd /var/www
+cd "$(dirname "$0")/.."
 
 # Run migrations
 echo "Running migrations..."
