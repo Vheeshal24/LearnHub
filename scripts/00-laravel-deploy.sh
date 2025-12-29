@@ -8,6 +8,10 @@ cd "$(dirname "$0")/.."
 echo "Running migrations..."
 php artisan migrate --force
 
+# ... after php artisan migrate --force
+echo "Seeding database..."
+php artisan db:seed --force
+
 # Clear and cache config
 echo "Caching config..."
 php artisan config:cache
