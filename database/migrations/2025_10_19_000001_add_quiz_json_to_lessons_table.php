@@ -7,16 +7,21 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-         // Temporarily disabled because the lessons table does not exist yet.
-    // Schema::table('lessons', function (Blueprint $table) {
-    //     $table->longText('quiz_json')->nullable()->after('content_url');
-    // });
+        // Check if the table exists before trying to modify it
+        if (Schema::hasTable('lessons')) {
+            Schema::table('lessons', function (Blueprint $table) {
+                // Use jsonb for better performance in PostgreSQL
+                $table->jsonb('quiz_json')->nullable()->after('content_url');
+            });
+        }
     }
 
     public function down(): void
     {
-        // Schema::table('lessons', function (Blueprint $table) {
-    //     $table->dropColumn('quiz_json');
-    // });
+        if (Schema::hasTable('lessons')) {
+            Schema::table('lessons', function (Blueprint $table) {
+                $table->dropColumn('quiz_json');
+            });
+        }
     }
 };
