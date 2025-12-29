@@ -12,6 +12,10 @@ php artisan migrate --force
 echo "Seeding database..."
 php artisan db:seed --force
 
+# Run specific Seeder for dummy data
+echo "Seeding database with DemoContentSeeder..."
+php artisan db:seed --class=DemoContentSeeder --force
+
 # Clear and cache config
 echo "Caching config..."
 php artisan config:cache
