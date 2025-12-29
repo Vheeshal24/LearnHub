@@ -4,14 +4,15 @@ echo "Running deployment script..."
 # Navigate to project root
 cd "$(dirname "$0")/.."
 
-# Run migrations
-echo "Wiping database and running fresh migrations..."
-php artisan migrate:fresh --force
+# Run migrations (safe for production)
+echo "Running database migrations..."
+php artisan migrate --force
 
-# Run specific Seeder for dummy data
-# Run Seeder with UNLIMITED memory
-echo "Seeding database..."
-php -d memory_limit=-1 artisan db:seed --class=DemoContentSeeder --force
+# Optional: seed demo data when explicitly enabled
+if [ "${SEED_DEMO:-0}" = "1" ]; then
+  echo "Seeding demo database..."
+  php artisan db:seed --class=DemoContentSeeder --force
+fi
 
 # Clear and cache config
 echo "Caching config..."
