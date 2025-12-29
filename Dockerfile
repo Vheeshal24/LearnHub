@@ -37,4 +37,7 @@ ENV nginx_config_file /var/www/html/conf/nginx/nginx-site.conf
 # Permissions for Laravel folders
 RUN chmod -R 775 storage bootstrap/cache
 
+# Increase PHP memory limit for large seeders
+RUN echo "memory_limit=512M" > /usr/local/etc/php/conf.d/memory-limit.ini
+
 CMD ["/start.sh"]

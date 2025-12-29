@@ -5,16 +5,13 @@ echo "Running deployment script..."
 cd "$(dirname "$0")/.."
 
 # Run migrations
-echo "Running migrations..."
-php artisan migrate --force
-
-# ... after php artisan migrate --force
-echo "Seeding database..."
-php artisan db:seed --force
+echo "Wiping database and running fresh migrations..."
+php artisan migrate:fresh --force
 
 # Run specific Seeder for dummy data
-echo "Seeding database with DemoContentSeeder..."
-php artisan db:seed --class=DemoContentSeeder --force
+# Run Seeder with UNLIMITED memory
+echo "Seeding database..."
+php -d memory_limit=-1 artisan db:seed --class=DemoContentSeeder --force
 
 # Clear and cache config
 echo "Caching config..."
