@@ -34,10 +34,14 @@ ENV RUN_SCRIPTS 1
 ENV ERRORS_PAGES 0
 ENV nginx_config_file /var/www/html/conf/nginx/nginx-site.conf
 
-# Permissions for Laravel folders
-RUN chmod -R 775 storage bootstrap/cache
+# --- UPDATED PERMISSIONS SECTION ---
+# 1. Create the public/storage directory if it doesn't exist (to avoid symlink errors)
+RUN mkdir -p /var/www/html/public/storage
 
-# Set a conservative PHP memory limit to avoid OOM on small instances
-RUN echo "memory_limit=256M" > /usr/local/etc/php/conf.d/memory-limit.ini
+# 2. Give the web server (www-data) ownership of the storage and cache
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/storage
+
+# 3. Set correct permissions
+RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 CMD ["/start.sh"]

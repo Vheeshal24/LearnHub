@@ -14,6 +14,10 @@ if [ "${SEED_DEMO:-0}" = "1" ]; then
   php artisan db:seed --class=DemoContentSeeder --force
 fi
 
+# Force the creation of the link even if it exists
+echo "Creating storage link..."
+php artisan storage:link --force
+
 # Clear and cache config
 echo "Caching config..."
 php artisan config:cache
