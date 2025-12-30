@@ -36,7 +36,7 @@ ENV nginx_config_file /var/www/html/conf/nginx/nginx-site.conf
 
 # --- UPDATED PERMISSIONS SECTION ---
 # 1. Create the public/storage directory if it doesn't exist (to avoid symlink errors)
-RUN mkdir -p /var/www/html/public/storage
+RUN mkdir -p /var/www/html/public/storage /var/www/html/storage/app/public
 
 # 2. Give the web server (www-data) ownership of the storage and cache
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/storage
